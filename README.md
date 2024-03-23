@@ -46,7 +46,7 @@ git clone https://github.com/bluegreen-labs/phenocam_installation_tool_v2.git
 In the (unzipped) project directory you can then execute the below commands. The installation tool uses the following syntax
 
 ```bash
-./PIT.sh -i 192.168.1.xxx -n testcam -o 1 -t GMT -s 9 -e 22 -m 13 -p camerapassword
+./PIT.sh -i 192.168.1.xxx -n testcam -o 1 -t GMT -s 9 -e 22 -m 13
 
 ```
 
