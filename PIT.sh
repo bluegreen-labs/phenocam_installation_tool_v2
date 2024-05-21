@@ -14,14 +14,21 @@
 #
 #--------------------------------------------------------------------
 
-# subroutines
-error_handler(){
+# error handling subroutines
+error_exit(){
   echo ""
   echo " NOTE: If no confirmation of a successful upload is provided,"
   echo " check all script parameters!"
   echo ""
   echo "===================================================================="
-  exit 1
+  exit 0
+}
+
+# error handling subroutines
+error_continued(){
+  echo ""
+  echo " Failed task... continuing"
+  echo ""
 }
 
 # define usage
@@ -35,12 +42,14 @@ usage() {
   [-s <start time 0-23>]
   [-e <end time 0-23>]  
   [-m <interval minutes>]
-  [-k <sftp private key>]
+  [-k <set private key>]
+  [-r <retrieve private key>]
+  [-x <purge all previous settings and keys>]
   " 1>&2; exit 0;
  }
 
 # grab arguments
-while getopts ":hi:p:n:o:t:s:e:m:k:d:" option;
+while getopts ":hi:p:n:o:t:s:e:m:k:r:x:d:" option;
 do
     case "${option}"
         in
@@ -52,6 +61,8 @@ do
         e) end=${OPTARG} ;;
         m) int=${OPTARG} ;;
         k) key=${OPTARG} ;;
+        r) retrieve=${OPTARG} ;;
+        x) purge=${OPTARG} ;;
         h | *) usage; exit 0 ;;
     esac
 done
@@ -61,20 +72,138 @@ echo "===================================================================="
 echo ""
 echo " Running the installation script on the NetCam Live2 camera!"
 echo ""
-echo " (c) BlueGreen Labs (BV) 2024"
+echo " (c) BlueGreen Labs (BV) 2024 - https://bluegreenlabs.org"
 echo " -----------------------------------------------------------"
 echo ""
+
+# if the retrieve argument is active retrieve the
+# public private keys
+if [ "${purge}" ]; then
+
+ echo " Purging all previous settings and login credentials"
+ echo ""
+ 
+ # create command
+ command="
+  rm -rf /mnt/cfg1/settings.txt
+  rm -rf /mnt/cfg1/.password
+  rm -rf /mnt/cfg1/phenocam_key
+  rm -rf /mnt/cfg1/phenocam_key.pub
+  rm -rf /mnt/cfg1/update.txt
+  rm -rf /mnt/cfg1/scripts/
+ "
+ 
+ # execute command
+ ssh admin@${ip} ${command} || error_handler 2>/dev/null
+ 
+ echo ""
+ echo " Done, cleaned the camera!"
+  echo ""
+ echo "===================================================================="
+ exit 0
+fi
+
+# if the retrieve argument is active retrieve the
+# public private keys
+if [ "${retrieve}" ]; then
+
+ echo " Checking and retrieving existing private key."
+ echo " [Run this command when restoring camera settings]"
+ echo ""
+ 
+ # create command
+ command="
+  if [ -f '/mnt/cfg1/phenocam_key' ]; then cat /mnt/cfg1/phenocam_key; else exit 1; fi
+ "
+
+ # execute command
+ ssh admin@${ip} ${command} > phenocam_key || error_continued 2>/dev/null
+
+ # sanity checks
+ # count lines in private key
+ if [ -f 'phenocam_key' ]; then
+  line_count=`cat phenocam_key | wc -l`
+  if [ ! "${line_count}" -gt 0 ]; then
+   echo ""
+   echo " no valid private key was found on the camera"
+   echo ""
+   rm -rf phenocam_key
+  else
+   echo ""
+   echo " A valid key was found and stored locally in phenocam_key"
+   echo "--------------------------------------------------------------------"
+   
+   # plot the key to file
+   cat phenocam_key
+   
+  fi
+ else
+  echo ""
+  echo " no valid private key was found on the camera"
+  echo ""
+ fi
+ 
+ # create command
+ command="
+  if [ -f '/mnt/cfg1/phenocam_key.pub' ]; then cat /mnt/cfg1/phenocam_key.pub; else exit 1; fi
+ "
+
+ # execute command
+ ssh admin@${ip} ${command} > phenocam_key.pub || error_continued 2>/dev/null
+
+ # sanity checks
+ # count lines in private key
+ if [ -f 'phenocam_key.pub' ]; then
+  line_count=`cat phenocam_key.pub | wc -l`
+  if [ ! "${line_count}" -gt 0 ]; then
+   echo ""
+   echo " no valid public key was found on the camera"
+   echo ""
+   rm -rf phenocam_key.pub
+  else
+   echo ""
+   echo " A valid key was found and stored locally in phenocam_key.pub"
+   echo "--------------------------------------------------------------------"
+   
+   # plot the key to file
+   cat phenocam_key.pub
+   
+  fi
+ else
+  echo ""
+  echo " no valid public key was found on the camera"
+  echo ""
+ fi
+
+ echo "===================================================================="
+ exit 0
+fi
+
+# generate public-private key pair in the current directory
+# warn if the file already exists
+if [ "${key}" ]; then
+ if [ ! -f "phenocam_key" ]; then
+  ssh-keygen -q -t rsa -N '' -f phenocam_key <<<y >/dev/null 2>&1
+ else
+  echo ""
+  echo "An existing private key was previously set or retrieved from the camera."
+  echo "If you want to overwrite the exiting key remove the 'phenocam_key' file"
+  echo "from the current working directory."
+  echo ""
+ fi
+fi
 
 # Default to GMT time zone
 tz="GMT"
 
-if [ -f "${key}" ]; then
+if [ "${key}" ]; then
  # print the content of the path to the
  # key and assign to a variable
- private_key=`cat ${key}`
  echo " Private key provided, using secure SFTP!"
  echo ""
  has_key="TRUE"
+ private_key=`awk 'NF {sub(/\r/, ""); printf "%s\\\\n",$0;}' ./phenocam_key`
+ public_key=`cat ./phenocam_key.pub`
 else
  echo " No private key provided, defaulting to insecure FTP!"
  echo ""
@@ -98,8 +227,8 @@ command="
  echo '125' >> /mnt/cfg1/settings.txt &&
  echo '205' >> /mnt/cfg1/settings.txt &&
  echo ${pass} > /mnt/cfg1/.password &&
- rm -rf /mnt/cfg1/.key &&
- if [ ${has_key} = "TRUE" ]; then echo '${private_key}' > /mnt/cfg1/.key; fi && 
+ if [ ${has_key} = 'TRUE' ]; then echo '${private_key}' | sed 's/\\\n/\n/g' > /mnt/cfg1/phenocam_key; fi &&
+ if [ ${has_key} = 'TRUE' ]; then echo '${public_key}' > /mnt/cfg1/phenocam_key.pub; fi &&
  cd /var/tmp; cat | base64 -d | tar -x &&
  if [ ! -d '/mnt/cfg1/scripts' ]; then mkdir /mnt/cfg1/scripts; fi && 
  cp /var/tmp/files/* /mnt/cfg1/scripts &&
@@ -116,9 +245,8 @@ command="
  echo 'Upload start: ${start}' &&
  echo 'Upload end: ${end}' &&
  echo 'Upload interval: ${int}' &&
- echo 'FTP mode:' &&
  echo '' &&
- echo ' --> Reboot the camera by cycling the power or wait 10 seconds! <-- ' &&
+ echo ' --> Reboot the camera by cycling the power or wait 20 seconds! <-- ' &&
  echo '' &&
  echo '====================================================================' &&
  echo '' &&
@@ -127,7 +255,7 @@ command="
 
 # install command
 BINLINE=$(awk '/^__BINARY__/ { print NR + 1; exit 0; }' $0)
-tail -n +${BINLINE} $0 | ssh admin@${ip} ${command} || error_handler 2>/dev/null
+tail -n +${BINLINE} $0 | ssh admin@${ip} ${command} || error_exit 2>/dev/null
 
 # remove last lines from history
 # containing the password
@@ -283,7 +411,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABmaWxlcy9waGVub2NhbV91
 cGxvYWQuc2gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDAwMDc3NQAwMDAxNzUwADAwMDE3NTAAMDAwMDAw
-MTMzMjcAMTQ2MjIzMjY1MTEAMDE2MTA1ACAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+MTMzNDUAMTQ2MjMxNzAwMTMAMDE2MTAwACAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAHVzdGFyICAAa2h1ZmtlbnMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABraHVm
 a2VucwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
@@ -367,40 +495,40 @@ cnVuIHRoZSB1cGxvYWQgc2NyaXB0IGZvciB0aGUgaXAgZGF0YQogIyBhbmQgZm9yIGFsbCBzZXJ2
 ZXJzCiBmb3IgaSBpbiAkbnJzZXJ2ZXJzOwogZG8KICBTRVJWRVI9YGF3ayAtdiBwPSRpICdOUj09
 cCcgL21udC9jZmcxL3NlcnZlci50eHRgCiAKICBlY2hvICJ1cGxvYWRpbmcgdG86ICR7U0VSVkVS
 fSIKIAogICMgaWYga2V5IGZpbGUgZXhpc3RzIHVzZSBTRlRQCiAgaWYgWyAtZiAiL21udC9jZmcx
-Ly5rZXkiIF07IHRoZW4KICAgZWNobyAidXNpbmcgU0ZUUCIKICAKICAgZWNobyAicHV0ICR7aW1h
-Z2V9IGRhdGEvJHtTSVRFTkFNRX0vJHtpbWFnZX0iID4gYmF0Y2hmaWxlCiAgIGVjaG8gInB1dCAk
-e21ldGFmaWxlfSBkYXRhLyR7U0lURU5BTUV9LyR7bWV0YWZpbGV9IiA+PiBiYXRjaGZpbGUKICAK
-ICAgIyB1cGxvYWQgdGhlIGRhdGEKICAgc2Z0cCAtYiBiYXRjaGZpbGUgLWkgIi9tbnQvY2ZnMS8u
-a2V5IiAke1NJVEVOQU1FfUAke1NFUlZFUn0KICAgCiAgICMgcmVtb3ZlIGJhdGNoIGZpbGUKICAg
-cm0gYmF0Y2hmaWxlCiAgIAogIGVsc2UKICAgZWNobyAiZGVmYXVsdGluZyB0byBGVFAsIGNoZWNr
-IHlvdXIga2V5IgogIAogICAjIHVwbG9hZCBpbWFnZQogICBlY2hvICJ1cGxvYWRpbmcgaW1hZ2Ug
-JHtpbWFnZX0gKHN0YXRlOiAke3N0YXRlfSkiCiAgIGZ0cHB1dCAke1NFUlZFUn0gLS11c2VybmFt
-ZSBhbm9ueW1vdXMgLS1wYXNzd29yZCBhbm9ueW1vdXMgIGRhdGEvJHtTSVRFTkFNRX0vJHtpbWFn
-ZX0gJHtpbWFnZX0KCQogICBlY2hvICJ1cGxvYWRpbmcgbWV0YS1kYXRhICR7bWV0YWZpbGV9IChz
-dGF0ZTogJHtzdGF0ZX0pIgogICBmdHBwdXQgJHtTRVJWRVJ9IC0tdXNlcm5hbWUgYW5vbnltb3Vz
-IC0tcGFzc3dvcmQgYW5vbnltb3VzICBkYXRhLyR7U0lURU5BTUV9LyR7bWV0YWZpbGV9ICR7bWV0
-YWZpbGV9CgogIGZpCiBkb25lCgogIyBiYWNrdXAgdG8gU0QgY2FyZCB3aGVuIGluc2VydGVkCiBp
-ZiBbICIkU0RDQVJEIiAtZXEgMSBdOyB0aGVuIAogIGNwICR7aW1hZ2V9IC9tbnQvbW1jL3BoZW5v
-Y2FtX2JhY2t1cC8ke2ltYWdlfQogIGNwICR7bWV0YWZpbGV9IC9tbnQvbW1jL3BoZW5vY2FtX2Jh
-Y2t1cC8ke21ldGFmaWxlfQogZmkKCiAjIGNsZWFuIHVwIGZpbGVzCiBybSAqLmpwZwogcm0gKi5t
-ZXRhCgpkb25lCgojIFJlc2V0IHRvIFZJUyBhcyBkZWZhdWx0Ci91c3Ivc2Jpbi9zZXRfaXIuc2gg
-MAoKIy0tLS0tLS0tLS0tLS0tIFJFU0VUIE5PUk1BTCBIRUFERVIgLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0KCiMgb3ZlcmxheSB0ZXh0Cm92ZXJsYXlfdGV4dD1gZWNobyAiJHtTSVRF
-TkFNRX0gLSAke21vZGVsfSAtICVhICViICVkICVZICVIOiVNOiVTIC0gR01UJHt0aW1lX29mZnNl
-dH0iIHwgc2VkICdzLyAvJTIwL2cnYAoJCiMgZm9yIG5vdyBkaXNhYmxlIHRoZSBvdmVybGF5Cndn
-ZXQgaHR0cDovL2FkbWluOiR7cGFzc31AMTI3LjAuMC4xL3ZiLmh0bT9vdmVybGF5dGV4dDE9JHtv
-dmVybGF5X3RleHR9CgojIGNsZWFuIHVwIGRldHJpdHVzCnJtIHZiKgoKIy0tLS0tLS0gRkVFREJB
-Q0sgT04gQUNUSVZJVFkgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCmVj
-aG8gImxhc3QgdXBsb2FkIGF0OiIgPj4gL3Zhci90bXAvbG9nLnR4dAplY2hvICREQVRFID4+IC92
-YXIvdG1wL2xvZy50eHQKCgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+L3BoZW5vY2FtX2tleSIgXTsgdGhlbgogICBlY2hvICJ1c2luZyBTRlRQIgogIAogICBlY2hvICJw
+dXQgJHtpbWFnZX0gZGF0YS8ke1NJVEVOQU1FfS8ke2ltYWdlfSIgPiBiYXRjaGZpbGUKICAgZWNo
+byAicHV0ICR7bWV0YWZpbGV9IGRhdGEvJHtTSVRFTkFNRX0vJHttZXRhZmlsZX0iID4+IGJhdGNo
+ZmlsZQogIAogICAjIHVwbG9hZCB0aGUgZGF0YQogICBzZnRwIC1iIGJhdGNoZmlsZSAtaSAiL21u
+dC9jZmcxL3BoZW5vY2FtX2tleSIgcGhlbm9zZnRwQCR7U0VSVkVSfQogICAKICAgIyByZW1vdmUg
+YmF0Y2ggZmlsZQogICBybSBiYXRjaGZpbGUKICAgCiAgZWxzZQogICBlY2hvICJkZWZhdWx0aW5n
+IHRvIEZUUCwgY2hlY2sgeW91ciBrZXkiCiAgCiAgICMgdXBsb2FkIGltYWdlCiAgIGVjaG8gInVw
+bG9hZGluZyBpbWFnZSAke2ltYWdlfSAoc3RhdGU6ICR7c3RhdGV9KSIKICAgZnRwcHV0ICR7U0VS
+VkVSfSAtLXVzZXJuYW1lIGFub255bW91cyAtLXBhc3N3b3JkIGFub255bW91cyAgZGF0YS8ke1NJ
+VEVOQU1FfS8ke2ltYWdlfSAke2ltYWdlfQoJCiAgIGVjaG8gInVwbG9hZGluZyBtZXRhLWRhdGEg
+JHttZXRhZmlsZX0gKHN0YXRlOiAke3N0YXRlfSkiCiAgIGZ0cHB1dCAke1NFUlZFUn0gLS11c2Vy
+bmFtZSBhbm9ueW1vdXMgLS1wYXNzd29yZCBhbm9ueW1vdXMgIGRhdGEvJHtTSVRFTkFNRX0vJHtt
+ZXRhZmlsZX0gJHttZXRhZmlsZX0KCiAgZmkKIGRvbmUKCiAjIGJhY2t1cCB0byBTRCBjYXJkIHdo
+ZW4gaW5zZXJ0ZWQKIGlmIFsgIiRTRENBUkQiIC1lcSAxIF07IHRoZW4gCiAgY3AgJHtpbWFnZX0g
+L21udC9tbWMvcGhlbm9jYW1fYmFja3VwLyR7aW1hZ2V9CiAgY3AgJHttZXRhZmlsZX0gL21udC9t
+bWMvcGhlbm9jYW1fYmFja3VwLyR7bWV0YWZpbGV9CiBmaQoKICMgY2xlYW4gdXAgZmlsZXMKIHJt
+ICouanBnCiBybSAqLm1ldGEKCmRvbmUKCiMgUmVzZXQgdG8gVklTIGFzIGRlZmF1bHQKL3Vzci9z
+YmluL3NldF9pci5zaCAwCgojLS0tLS0tLS0tLS0tLS0gUkVTRVQgTk9STUFMIEhFQURFUiAtLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKIyBvdmVybGF5IHRleHQKb3ZlcmxheV90ZXh0
+PWBlY2hvICIke1NJVEVOQU1FfSAtICR7bW9kZWx9IC0gJWEgJWIgJWQgJVkgJUg6JU06JVMgLSBH
+TVQke3RpbWVfb2Zmc2V0fSIgfCBzZWQgJ3MvIC8lMjAvZydgCgkKIyBmb3Igbm93IGRpc2FibGUg
+dGhlIG92ZXJsYXkKd2dldCBodHRwOi8vYWRtaW46JHtwYXNzfUAxMjcuMC4wLjEvdmIuaHRtP292
+ZXJsYXl0ZXh0MT0ke292ZXJsYXlfdGV4dH0KCiMgY2xlYW4gdXAgZGV0cml0dXMKcm0gdmIqCgoj
+LS0tLS0tLSBGRUVEQkFDSyBPTiBBQ1RJVklUWSAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0KZWNobyAibGFzdCB1cGxvYWQgYXQ6IiA+PiAvdmFyL3RtcC9sb2cudHh0CmVj
+aG8gJERBVEUgPj4gL3Zhci90bXAvbG9nLnR4dAoKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGZpbGVzL3JlYm9vdF9jYW1lcmEuc2gAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAwMDAwNjY0ADAwMDE3NTAAMDAwMTc1MAAwMDAwMDAwMDc3NwAxNDYwNTUy
-MzAzNAAwMTU1NTMAIDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAwMDAwNjY0ADAwMDE3NTAAMDAwMTc1MAAwMDAwMDAwMDc3NwAxNDYyMjM0
+NzA0MQAwMTU1NTQAIDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 dXN0YXIgIABraHVma2VucwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGtodWZrZW5zAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
@@ -412,8 +540,8 @@ S29lbiBIdWZrZW5zIGZvciBCbHVlR3JlZW4gTGFicyAoQlYpCiMKIyBVbmF1dGhvcml6ZWQgY2hh
 bmdlcyB0byB0aGlzIHNjcmlwdCBhcmUgY29uc2lkZXJlZCBhIGNvcHlyaWdodAojIHZpb2xhdGlv
 biBhbmQgd2lsbCBiZSBwcm9zZWN1dGVkLgojCiMtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
 LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKIyBncmFiIHBhc3N3b3Jk
-CnBhc3M9YGF3ayAnTlI9PTEnIC9tbnQvY2ZnMS8ucGFzc3dvcmRgCgojIHNsZWVwIDE1IHNlY29u
-ZHMKc2xlZXAgMTUKCiMgbW92ZSBpbnRvIHRlbXBvcmFyeSBkaXJlY3RvcnkKY2QgL3Zhci90bXAK
+CnBhc3M9YGF3ayAnTlI9PTEnIC9tbnQvY2ZnMS8ucGFzc3dvcmRgCgojIHNsZWVwIDIwIHNlY29u
+ZHMKc2xlZXAgMjAKCiMgbW92ZSBpbnRvIHRlbXBvcmFyeSBkaXJlY3RvcnkKY2QgL3Zhci90bXAK
 CiMgcmVib290CndnZXQgaHR0cDovL2FkbWluOiR7cGFzc31AMTI3LjAuMC4xL3ZiLmh0bT9pcGNh
 bXJlc3RhcnRjbWQgJj4vZGV2L251bGwKCgBmaWxlcy9zaXRlX2lwLmh0bWwAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
