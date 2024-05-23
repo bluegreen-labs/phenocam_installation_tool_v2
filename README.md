@@ -52,11 +52,15 @@ to enable sFTP support (key based login and encrypted transfers) use:
 ./PIT.sh -i 192.168.1.xxx -n testcam -o +1 -s 9 -e 22 -m 13 -p password -k TRUE
 ```
 
-To retrieve the current login keys use:
+To retrieve the current login key use:
 
 ```bash
 ./PIT.sh -i 192.168.1.xxx -r TRUE
 ```
+
+> [!note]
+> The above command will put a `phenocam_key.pub` file in your current directory. 
+> To complete the sFTP install you will have to email this public key to phenocam@nau.edu.
 
 To purge all settings and scripts use:
 

@@ -27,7 +27,7 @@ error_exit(){
 # error handling subroutines
 error_continued(){
   echo ""
-  echo " Failed task... continuing"
+  echo " No private key 'phenocam_key' found... (please run the installation routine)"
   echo ""
 }
 
@@ -88,7 +88,6 @@ if [ "${purge}" ]; then
   rm -rf /mnt/cfg1/settings.txt
   rm -rf /mnt/cfg1/.password
   rm -rf /mnt/cfg1/phenocam_key
-  rm -rf /mnt/cfg1/phenocam_key.pub
   rm -rf /mnt/cfg1/update.txt
   rm -rf /mnt/cfg1/scripts/
  "
@@ -103,94 +102,34 @@ if [ "${purge}" ]; then
  exit 0
 fi
 
-# if the retrieve argument is active retrieve the
-# public private keys
+# if the retrieve the public key
 if [ "${retrieve}" ]; then
+ 
+ # create command
+ command="
+  if [ -f '/mnt/cfg1/phenocam_key' ]; then dropbearkey -t rsa -f /mnt/cfg1/phenocam_key -y; else exit 1; fi
+ "
 
- echo " Checking and retrieving existing private key."
- echo " [Run this command when restoring camera settings]"
+ echo " Retrieving the public key login credentials"
  echo ""
  
- # create command
- command="
-  if [ -f '/mnt/cfg1/phenocam_key' ]; then cat /mnt/cfg1/phenocam_key; else exit 1; fi
- "
-
  # execute command
- ssh admin@${ip} ${command} > phenocam_key || error_continued 2>/dev/null
-
- # sanity checks
- # count lines in private key
- if [ -f 'phenocam_key' ]; then
-  line_count=`cat phenocam_key | wc -l`
-  if [ ! "${line_count}" -gt 0 ]; then
-   echo ""
-   echo " no valid private key was found on the camera"
-   echo ""
-   rm -rf phenocam_key
-  else
-   echo ""
-   echo " A valid key was found and stored locally in phenocam_key"
-   echo "--------------------------------------------------------------------"
-   
-   # plot the key to file
-   cat phenocam_key
-   
-  fi
- else
-  echo ""
-  echo " no valid private key was found on the camera"
-  echo ""
- fi
+ ssh admin@${ip} ${command} > tmp.pub || error_continued 2>/dev/null
  
- # create command
- command="
-  if [ -f '/mnt/cfg1/phenocam_key.pub' ]; then cat /mnt/cfg1/phenocam_key.pub; else exit 1; fi
- "
-
- # execute command
- ssh admin@${ip} ${command} > phenocam_key.pub || error_continued 2>/dev/null
-
- # sanity checks
- # count lines in private key
- if [ -f 'phenocam_key.pub' ]; then
-  line_count=`cat phenocam_key.pub | wc -l`
-  if [ ! "${line_count}" -gt 0 ]; then
-   echo ""
-   echo " no valid public key was found on the camera"
-   echo ""
-   rm -rf phenocam_key.pub
-  else
-   echo ""
-   echo " A valid key was found and stored locally in phenocam_key.pub"
-   echo "--------------------------------------------------------------------"
-   
-   # plot the key to file
-   cat phenocam_key.pub
-   
-  fi
- else
-  echo ""
-  echo " no valid public key was found on the camera"
-  echo ""
- fi
-
+ # strip out the public key
+ # no header or footer
+ grep "ssh-rsa" tmp.pub > phenocam_key.pub
+ rm -rf tmp.pub
+ 
+ echo "" 
+ echo " The public key was written to the 'phenocam_key.pub' file"
+ echo " in the current working directory!"
+ echo ""
+ echo " Forward this file to phenocam@nau.edu to finalize your"
+ echo " sFTP installation."
+ echo ""
  echo "===================================================================="
  exit 0
-fi
-
-# generate public-private key pair in the current directory
-# warn if the file already exists
-if [ "${key}" ]; then
- if [ ! -f "phenocam_key" ]; then
-  ssh-keygen -q -t rsa -N '' -f phenocam_key <<<y >/dev/null 2>&1
- else
-  echo ""
-  echo "An existing private key was previously set or retrieved from the camera."
-  echo "If you want to overwrite the exiting key remove the 'phenocam_key' file"
-  echo "from the current working directory."
-  echo ""
- fi
 fi
 
 # Default to GMT time zone
@@ -199,19 +138,17 @@ tz="GMT"
 if [ "${key}" ]; then
  # print the content of the path to the
  # key and assign to a variable
- echo " Private key provided, using secure SFTP!"
+ echo " Using secure SFTP!"
  echo ""
  has_key="TRUE"
- private_key=`awk 'NF {sub(/\r/, ""); printf "%s\\\\n",$0;}' ./phenocam_key`
- public_key=`cat ./phenocam_key.pub`
 else
- echo " No private key provided, defaulting to insecure FTP!"
+ echo " No key will be generated, defaulting to insecure FTP!"
  echo ""
  has_key="FALSE"
 fi
 
 # message on confirming the password
-echo " Uploading installation files, please approve this transaction by"
+echo " Uploading installation files, please approve this"
 echo " by confirming the password!"
 echo ""
 
@@ -227,8 +164,7 @@ command="
  echo '125' >> /mnt/cfg1/settings.txt &&
  echo '205' >> /mnt/cfg1/settings.txt &&
  echo ${pass} > /mnt/cfg1/.password &&
- if [ ${has_key} = 'TRUE' ]; then echo '${private_key}' | sed 's/\\\n/\n/g' > /mnt/cfg1/phenocam_key; fi &&
- if [ ${has_key} = 'TRUE' ]; then echo '${public_key}' > /mnt/cfg1/phenocam_key.pub; fi &&
+ if [[ ${has_key} = 'TRUE' && ! -f /mnt/cfg1/phenocam_key ]]; then dropbearkey -t rsa -f /mnt/cfg1/phenocam_key >/dev/null; fi &&
  cd /var/tmp; cat | base64 -d | tar -x &&
  if [ ! -d '/mnt/cfg1/scripts' ]; then mkdir /mnt/cfg1/scripts; fi && 
  cp /var/tmp/files/* /mnt/cfg1/scripts &&
@@ -239,12 +175,15 @@ command="
  echo '' &&
  echo ' Successfully uploaded install instructions!' &&
  echo '' &&
- echo 'Using the following settings:' &&
- echo 'Sitename: ${name}' &&
- echo 'GMT timezone offset: ${offset}' &&
- echo 'Upload start: ${start}' &&
- echo 'Upload end: ${end}' &&
- echo 'Upload interval: ${int}' &&
+ echo ' Using the following settings:' &&
+ echo ' Sitename: ${name}' &&
+ echo ' GMT timezone offset: ${offset}' &&
+ echo ' Upload start: ${start}' &&
+ echo ' Upload end: ${end}' &&
+ echo ' Upload interval: ${int}' &&
+ echo '' &&
+ if [ -f /mnt/cfg1/phenocam_key ]; then echo ' A private key exists or was generated, please run:'; fi &&
+ if [ -f /mnt/cfg1/phenocam_key ]; then echo ' ./PIT.sh ${ip} -r TRUE'; fi &&
  echo '' &&
  echo ' --> Reboot the camera by cycling the power or wait 20 seconds! <-- ' &&
  echo '' &&
@@ -411,7 +350,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABmaWxlcy9waGVub2NhbV91
 cGxvYWQuc2gAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMDAwMDc3NQAwMDAxNzUwADAwMDE3NTAAMDAwMDAw
-MTMzNDUAMTQ2MjMxNzAwMTMAMDE2MTAwACAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+MTMzNDUAMTQ2MjM2MDc2MTAAMDE2MTEwACAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAHVzdGFyICAAa2h1ZmtlbnMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABraHVm
 a2VucwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
@@ -495,9 +434,9 @@ cnVuIHRoZSB1cGxvYWQgc2NyaXB0IGZvciB0aGUgaXAgZGF0YQogIyBhbmQgZm9yIGFsbCBzZXJ2
 ZXJzCiBmb3IgaSBpbiAkbnJzZXJ2ZXJzOwogZG8KICBTRVJWRVI9YGF3ayAtdiBwPSRpICdOUj09
 cCcgL21udC9jZmcxL3NlcnZlci50eHRgCiAKICBlY2hvICJ1cGxvYWRpbmcgdG86ICR7U0VSVkVS
 fSIKIAogICMgaWYga2V5IGZpbGUgZXhpc3RzIHVzZSBTRlRQCiAgaWYgWyAtZiAiL21udC9jZmcx
-L3BoZW5vY2FtX2tleSIgXTsgdGhlbgogICBlY2hvICJ1c2luZyBTRlRQIgogIAogICBlY2hvICJw
-dXQgJHtpbWFnZX0gZGF0YS8ke1NJVEVOQU1FfS8ke2ltYWdlfSIgPiBiYXRjaGZpbGUKICAgZWNo
-byAicHV0ICR7bWV0YWZpbGV9IGRhdGEvJHtTSVRFTkFNRX0vJHttZXRhZmlsZX0iID4+IGJhdGNo
+L3BoZW5vY2FtX2tleSIgXTsgdGhlbgogICBlY2hvICJ1c2luZyBTRlRQIgogIAogICBlY2hvICJQ
+VVQgJHtpbWFnZX0gZGF0YS8ke1NJVEVOQU1FfS8ke2ltYWdlfSIgPiBiYXRjaGZpbGUKICAgZWNo
+byAiUFVUICR7bWV0YWZpbGV9IGRhdGEvJHtTSVRFTkFNRX0vJHttZXRhZmlsZX0iID4+IGJhdGNo
 ZmlsZQogIAogICAjIHVwbG9hZCB0aGUgZGF0YQogICBzZnRwIC1iIGJhdGNoZmlsZSAtaSAiL21u
 dC9jZmcxL3BoZW5vY2FtX2tleSIgcGhlbm9zZnRwQCR7U0VSVkVSfQogICAKICAgIyByZW1vdmUg
 YmF0Y2ggZmlsZQogICBybSBiYXRjaGZpbGUKICAgCiAgZWxzZQogICBlY2hvICJkZWZhdWx0aW5n
