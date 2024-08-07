@@ -33,7 +33,7 @@ to get a list of the MAC addresses and IP’s of all the computers on the local 
 
 ### 2. Software prerequisites
 
-For the script to run successfully you will need an `ssh` client and bash support, these are included in both MacOS and Linux default installs and can be provided in Windows by [using the Windows linux subsystem (WSL)](https://learn.microsoft.com/en-us/windows/wsl/install). Follow the instructions on the WSL carefully, and **reboot your system** before opening a WSL (Ubuntu) terminal. At times copying commands in to the WSL terminal might fail. In this case **use the (right click) menu** rather than keyboard shortcuts.
+For the script to run successfully you will need an `ssh` client and bash support, these are included in both MacOS and Linux default installs and can be provided in Windows by [using the Windows linux subsystem (WSL)](https://learn.microsoft.com/en-us/windows/wsl/install). Follow the instructions on the installation and use of the WSL carefully, and **reboot your system** before opening a WSL (Ubuntu) terminal. At times copying commands into the WSL terminal might fail. In this case **use the (right click) menu** rather than keyboard shortcuts.
 
 Once you have access to a WSL/linux terminal you can download this repository by either a direct download of a [zip file](https://github.com/bluegreen-labs/phenocam_installation_tool_v2/), or if you have git running by cloning the branch with:
 
@@ -102,7 +102,7 @@ To retrieve the current login key use when using sFTP use:
 
 > [!note]
 > The above command will put a `phenocam_key.pub` file in your current directory. 
-> To complete the sFTP install you will have to email this public key to phenocam@nau.edu.
+> To complete the sFTP install you will have to email this (public) key file to phenocam@nau.edu.
 
 #### 4.2 Uploading a test image manually
 
@@ -115,7 +115,7 @@ Once successfully configured make sure the router or camera has internet access.
 Wait until the camera uploads its first images, the process will be verbose and give sufficient feedback on progress. If no explicit warnings are provided you should assume the upload was successful. Once uploaded, verify the upload on the webpage (image) associated with your camera at:
 
 ```
-https://phenocam.nau.edu/data/latest/YOURCAMERANAME.jpg
+https://phenocam.nau.edu/data/latest/YOUR-CAMERA-NAME.jpg
 ```
 
 This location will be update once every 15-30 minutes, please be patient and do not run the installation script again. If you use key based logins (sFTP) you will have to forward the public key `phenocam_key.pub` created in your current directory. This key will have to be manually added to the PhenoCam network, which might take some time. In this case the upload of your test image might fail. Similarly, uploads will fail if you don't have confirmation on the creation of your PhenoCam site (camera instance).
@@ -131,7 +131,7 @@ To purge all settings and scripts use:
 ./PIT.sh -i 192.168.1.xxx -x
 ```
 
-Only use this option as a last resort (or when recycling the camera for a new site). You can call the above scripts to change your camera settings without deleting your login credentials.
+Only use this option as a last resort (or when recycling the camera for a new site). You can call the installation routine, to change your camera settings, multiple times without deleting your login credentials.
 
 ### Backups and offline use
 
