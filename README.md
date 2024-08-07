@@ -33,9 +33,9 @@ to get a list of the MAC addresses and IP’s of all the computers on the local 
 
 ### 2. Software prerequisites
 
-For the script to run successfully you will need an `ssh` client and bash support, these are included in both MacOS and Linux default installs and can be provided in Windows by [using the linux subsystem](https://learn.microsoft.com/en-us/windows/wsl/install). 
+For the script to run successfully you will need an `ssh` client and bash support, these are included in both MacOS and Linux default installs and can be provided in Windows by [using the Windows linux subsystem (WSL)](https://learn.microsoft.com/en-us/windows/wsl/install). Follow the instructions on the WSL carefully, and **reboot your system** before opening a WSL (Ubuntu) terminal. At times copying commands in to the WSL terminal might fail. In this case **use the (right click) menu** rather than keyboard shortcuts.
 
-You can download this required repository by either a direct download of a [zip file](https://github.com/bluegreen-labs/phenocam_installation_tool_v2/), or if you have git running by cloning the branch with:
+Once you have access to a WSL/linux terminal you can download this repository by either a direct download of a [zip file](https://github.com/bluegreen-labs/phenocam_installation_tool_v2/), or if you have git running by cloning the branch with:
 
 ```bash
 git clone https://github.com/bluegreen-labs/phenocam_installation_tool_v2.git
@@ -77,6 +77,9 @@ To install your phenocam you will use the Phenocam Installation Tool (or PIT) sc
 
 #### 4.1 Configuring the camera
 
+> [!note]
+> To configure the camera you do not need to change any settings using the graphical user interface (webpage) of the camera itself. The configuration script (and ancillary scripts) will take care of all required settings from the command line in a consistent and concise way. **Changing settings using the camera webpage might corrupt the data you send to the PhenoCam network**.
+
 To configure a camera for the GMT+1 time zone taking pictures every 30 minutes between nine (9) in the morning and ten (22) at night you would use the following command. Note that you also need to specify your IP address, and password and the camera name you used in the site survey (see above). 
 
 ```bash
@@ -109,10 +112,10 @@ Once successfully configured make sure the router or camera has internet access.
 ./PIT.sh -i 192.168.1.xxx -u
 ```
 
-Wait until the camera uploads its first images, the process will be verbose and give sufficient feedback on progress. If no explicit warnings are provided you should assume the upload was successful. Once uploaded, verify the webpage associated with your camera at:
+Wait until the camera uploads its first images, the process will be verbose and give sufficient feedback on progress. If no explicit warnings are provided you should assume the upload was successful. Once uploaded, verify the upload on the webpage (image) associated with your camera at:
 
 ```
-https://phenocam.nau.edu/webcam/sites/YOURCAMERANAME/
+https://phenocam.nau.edu/data/latest/YOURCAMERANAME.jpg
 ```
 
 This location will be update once every 15-30 minutes, please be patient and do not run the installation script again. If you use key based logins (sFTP) you will have to forward the public key `phenocam_key.pub` created in your current directory. This key will have to be manually added to the PhenoCam network, which might take some time. In this case the upload of your test image might fail. Similarly, uploads will fail if you don't have confirmation on the creation of your PhenoCam site (camera instance).
