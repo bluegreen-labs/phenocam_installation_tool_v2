@@ -54,7 +54,7 @@ do
     esac
 done
 
-echo " Changing the password"
+echo " Please follow the instructions to change your password!"
 echo ""
  
 # check if IP is provided
@@ -63,9 +63,19 @@ if [ -z ${ip} ]; then
   error_upload
 fi
  
+echo -n "Please provide your old password: "
+read -s pass
+echo ""
+echo -n "Please set a new password: "
+read -s new_pass
+echo ""
+ echo "Please login to the system to finalize these changes!"
+echo ""
+ 
 # create command
 command="
-  passwd admin
+  cd /var/tmp/
+  wget http://admin:${pass}@127.0.0.1/vb.htm?adminpwd=${new_pass} &>/dev/null
  "
  
 # execute command

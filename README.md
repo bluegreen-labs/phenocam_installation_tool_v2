@@ -18,7 +18,7 @@ Please use this survey to apply for adding your camera to the PhenoCam network. 
 
 ### 1. Hardware prerequisites
 
-Please connect a computer and the PhenoCam to the same (wireless) router which has **NO** internet access (see warnings regarding the default password above - make sure to set a strong password before the camera is exposed to an unprotected network). Once your camera is powered on and connected to the (open) network **you will need to find your camera’s network IP address to configure the camera**.
+Please connect a computer and the PhenoCam to the same (wireless) router which has **NO** internet access (see warnings regarding the default password above - make sure to set a strong password before the camera is exposed to an unprotected network). A detailed description on how to physically configure the camera (i.e. power, network connections and surge protection) you can find [the PhenoCam website](https://phenocam.nau.edu/pdf/PhenoCam_Install_Instructions.pdf). Once your camera is powered on and connected to the (open) network **you will need to find your camera’s network IP address to configure the camera**.
 
 The easiest way to find the camera’s IP address is to install [StarDot Tools](http://www.stardot.com/downloads). Run the StarDot Tools program and click “refresh”. The camera should be detected and the camera’s IP address shown (you may have to run Tools as administrator in Windows, depending on your settings).
 
