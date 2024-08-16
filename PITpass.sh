@@ -76,7 +76,8 @@ echo ""
 command="
   cd /var/tmp/ ;
   wget http://admin:${pass}@127.0.0.1/vb.htm?adminpwd=${new_pass} &> /dev/null;
-  sleep 3
+  sleep 3;
+  rm vb*
  "
  
 # execute command
