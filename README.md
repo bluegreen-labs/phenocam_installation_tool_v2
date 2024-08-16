@@ -54,7 +54,7 @@ Use the included script using the following code to update your password:
 ./PITpass.sh -i 192.168.1.xxx
 ```
 
-using the IP address you retrieved using the above instructions. **Follow the onscreen instructions** to set a new password. Change the default password to a strong password which is unlikely to be brute forced (i.e. 12+ characters in a mix of letters/numbers/special characters).
+using the IP address you retrieved using the above instructions. **Follow the onscreen instructions** to set a new password. Change the default password to a strong password which is unlikely to be brute forced (i.e. 12+ characters in a mix of letters/numbers/special characters). **You will be asked for the password again when logging in using SSH, this is normal!**
 
 ### 4. The PIT configuration script
 
@@ -80,10 +80,22 @@ To install your phenocam you will use the Phenocam Installation Tool (or PIT) sc
 > [!note]
 > To configure the camera you do not need to change any settings using the graphical user interface (webpage) of the camera itself. The configuration script (and ancillary scripts) will take care of all required settings from the command line in a consistent and concise way. **Changing settings using the camera webpage might corrupt the data you send to the PhenoCam network**.
 
-To configure a camera for the GMT+1 time zone taking pictures every 30 minutes between nine (9) in the morning and ten (22) at night you would use the following command. Note that you also need to specify your IP address, and password and the camera name you used in the site survey (see above). 
+To configure a camera for the GMT+1 time zone taking pictures every 30 minutes between nine (9) in the morning and ten (22) at night you would use the following command. Note that you also need to specify your IP address, and password and the camera name you used in the site survey (see above). **You will be asked for the password again when logging in using SSH, this is normal!**
 
 ```bash
 ./PIT.sh -i 192.168.1.xxx -p password -n testcam -o +1 -s 9 -e 22 -m 30
+```
+
+Note, any dash (-) needs to be quoted and escaped when providing it as a parameters. As such, negative GMT offsets need to use the escape character \ as shown below:
+
+```bash
+./PIT.sh -i 192.168.1.xxx -p password -n testcam -o "\-1" -s 9 -e 22 -m 30
+```
+
+Similarly, using a dash in your password would require the following structure:
+
+```bash
+./PIT.sh -i 192.168.1.xxx -p "my\-password" -n testcam -o "\-1" -s 9 -e 22 -m 30
 ```
 
 ##### sFTP support

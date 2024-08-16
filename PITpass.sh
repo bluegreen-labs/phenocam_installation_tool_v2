@@ -69,13 +69,14 @@ echo ""
 echo -n "Please set a new password: "
 read -s new_pass
 echo ""
- echo "Please login to the system to finalize these changes!"
+echo "Please login to the system to finalize these changes!"
 echo ""
- 
+
 # create command
 command="
-  cd /var/tmp/
-  wget http://admin:${pass}@127.0.0.1/vb.htm?adminpwd=${new_pass} &>/dev/null
+  cd /var/tmp/ ;
+  wget http://admin:${pass}@127.0.0.1/vb.htm?adminpwd=${new_pass} &> /dev/null;
+  sleep 3
  "
  
 # execute command
