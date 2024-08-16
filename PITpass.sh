@@ -74,10 +74,10 @@ echo ""
 
 # create command
 command="
-  cd /var/tmp/ ;
-  wget http://admin:${pass}@127.0.0.1/vb.htm?adminpwd=${new_pass} &> /dev/null;
-  sleep 3;
-  rm vb*
+  cd /var/tmp/ &&
+  wget http://admin:${pass}@127.0.0.1/vb.htm?adminpwd=${new_pass} &> /dev/null &&
+  sleep 3 &&
+  rm -rf vb*
  "
  
 # execute command
