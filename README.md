@@ -114,7 +114,12 @@ To retrieve the current login key use when using sFTP use:
 
 > [!note]
 > The above command will put a `phenocam_key.pub` file in your current directory. 
-> To complete the sFTP install you will have to email this (public) key file to phenocam@nau.edu.
+
+To complete the sFTP install you will have to email this (public) key file to phenocam@nau.edu. If you received confirmation you can validate if the login procedure works with:
+
+```bash
+./PIT.sh -i 192.168.1.xxx -v
+```
 
 #### 4.2 Uploading a test image manually
 
@@ -149,3 +154,23 @@ Only use this option as a last resort (or when recycling the camera for a new si
 
 If a micro-SD card is inserted in the back of the camera all images will be backed up by default to this card in the `phenocam_backup` directory. The card size is limited to 32GB (standard camera/cellphone cards should work). Cards are hot swappable, meaning you can remove a card without further action and replace it with a different one. This allows easy data retrieval in the field (using two cards in rotation). If you are on an unstable internet connection it might be beneficial to use SD cards as backups, so data can be backfilled from storage media.
 
+## FAQ
+
+1. My images don't upload, what can I do?
+
+ - check the connection of the camera to the server (can you reach phenocam.nau.edu from your site)
+ - validate if you have login access when using sFTP (see above)
+
+2. I want to change the camera name, can I do this?
+
+ - the configuration script can be rerun and will overwrite old settings
+ - note that to establish a true new identity tied to the camera in sFTP mode you will need to purge the old key (see above)
+ 
+3. I want to do a fresh install, what are my options?
+ 
+ - do a factory reset by pressing the recessed button on the back of the camera with a small metal rod
+ - a soft reset can be done by purging the camera (see above)
+ 
+4. I want to run a custom setup, where do I find information?
+
+ - the software only supports PhenoCam US and ICOS phenocams, for custom setups contanct BlueGreen Labs.
