@@ -156,7 +156,7 @@ retrieve() {
  
  # create command
  command="
-  if [ -f '/mnt/cfg1/phenocam_key' ]; then dropbearkey -t rsa -f /mnt/cfg1/phenocam_key -y; else exit 1; fi
+  if [ -f '/mnt/cfg1/phenocam_key' ]; then dropbearkey -t ecdsa -s 521 -f /mnt/cfg1/phenocam_key -y; else exit 1; fi
  "
 
  echo " Retrieving the public key login credentials"
@@ -167,7 +167,7 @@ retrieve() {
  
  # strip out the public key
  # no header or footer
- grep "ssh-rsa" tmp.pub > phenocam_key.pub
+ grep "ecdsa-sha2" tmp.pub > phenocam_key.pub
  rm -rf tmp.pub
  
  echo "" 
