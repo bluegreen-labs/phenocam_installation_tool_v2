@@ -353,7 +353,7 @@ command="
  echo '' &&
  echo ' NOTE:' &&
  echo ' A key (pair) exists or was generated, please run:' &&
- echo ' ./PIT.sh ${ip} -r' &&
+ echo ' ./PIT.sh -i ${ip} -r' &&
  echo ' to display/retrieve the current login key' &&
  echo ' and send this key to phenocam@nau.edu to complete the install.' &&
  echo '' &&
