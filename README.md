@@ -2,8 +2,6 @@
 
 PhenoCam Installation Tool (PIT) is a set of scripts to configure Stardot Netcam Live 2 for the use as a phenocam associated with the [PhenoCam network](http://phenocam.nau.edu) or [ICOS](https://www.icos-cp.eu/) network. Version 2 addresses the installation routine for the Stardot Netcam Live2 cameras, which supercede the previous default Netcam SC5 cameras. It would be appreciated that if custom changes are required you hire BlueGreen Labs in a consulting context.
 
-For the ICOS network I refer to the [ICOS branch](https://github.com/bluegreen-labs/phenocam_installation_tool_v2/tree/icos) of the software, which should be used instead of the main branch. Although largely the same, please consult the ICOS branch instructions for further details.
-
 > [!warning]
 > The default password on the Stardot cameras is **INSECURE**. Connecting any camera to an open network, without a firewall, will result in your camera being hacked (with [estimated times to infection](https://www.pcgamer.com/hardware/a-windows-xp-machines-life-expectancy-in-2024-seems-to-be-about-10-minutes-before-even-just-an-idle-net-connection-renders-it-a-trojan-riddled-zombie-pc/) ~ 10 min). Instructions on how to change the default password securely are provided in the instructions below. Follow these instructions step by step to ensure a secure install.
 
