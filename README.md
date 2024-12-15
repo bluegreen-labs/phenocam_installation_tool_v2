@@ -43,6 +43,13 @@ git clone https://github.com/bluegreen-labs/phenocam_installation_tool_v2.git
 
 In the (unzipped) project directory you can then execute the below steps, to set the password and configure your camera.
 
+Next, make sure the files are executable. Use the below command to change the permissions on the installation scripts.
+
+```bash
+chmod +x PITpass.sh
+chmod +x PIT.sh
+```
+
 ### 3. **Change the default password**
 
 > [!warning]
