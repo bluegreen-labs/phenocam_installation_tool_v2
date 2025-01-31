@@ -72,7 +72,7 @@ To install your phenocam you will use the Phenocam Installation Tool (or PIT) sc
 | -i            | **ip address of the camera** |
 | -p            | **camera password** |
 | -n            | **the name of the camera or site** |
-| -o            | **difference in hours from UTC of the timezone in which the camera resides (always use + or - signs to denote differences from UTC)** |
+| -o            | **difference in hours from UTC/GMT of the timezone in which the camera resides (always use + or - signs to denote differences, with - values for all US time zones)** |
 | -s            | **first hour of the scheduled image acquisitions (e.g. 4 in the morning)** |
 | -e            | **last hour of the scheduled image acquisitions (e.g. ten at night, so 22 in 24-h notation)** |
 | -m            | **interval minutes, at which to take pictures (e.g. 15, every 15 minutes - default phenocam setting is 30)** |
@@ -91,25 +91,25 @@ To configure a camera for the GMT+1 time zone taking pictures every 30 minutes b
 
 ```bash
 # PhenoCam US network
-./PIT.sh -i 192.168.1.xxx -p password -n testcam -o +1 -s 9 -e 22 -m 30 -d 'phenocam'
+./PIT.sh -i 192.168.1.xxx -p "password" -n testcam -o "\-5" -s 9 -e 22 -m 30 -d "phenocam"
 
 # ICOS Europe
-./PIT.sh -i 192.168.1.xxx -p password -n testcam -o +1 -s 9 -e 22 -m 30 -d 'icos'
+./PIT.sh -i 192.168.1.xxx -p "password" -n testcam -o +1 -s 9 -e 22 -m 30 -d "icos"
 
 # I will be using the PhenoCam US network in all the below examples, adjust
 # your commands if you are working on the ICOS network
 ```
 
-Note, any dash (-) needs to be quoted and escaped when providing it as a parameters. As such, negative GMT offsets need to use the escape character \ as shown below:
+Note, any dash (-) needs to be quoted and escaped when providing it as a parameters. As such, negative GMT offsets (in the US) need to use the escape character \ as shown below:
 
 ```bash
-./PIT.sh -i 192.168.1.xxx -p password -n testcam -o "\-1" -s 9 -e 22 -m 30 -d 'phenocam'
+./PIT.sh -i 192.168.1.xxx -p "password" -n testcam -o "\-1" -s 9 -e 22 -m 30 -d "phenocam"
 ```
 
-Similarly, using a dash in your password would require the following structure:
+Similarly, using a dash in your password would require the following structure. Also note that you need to use quotes around the password when using any special characters (i.e. with a good password):
 
 ```bash
-./PIT.sh -i 192.168.1.xxx -p "my\-password" -n testcam -o "\-1" -s 9 -e 22 -m 30 -d 'phenocam'
+./PIT.sh -i 192.168.1.xxx -p "my\-password" -n testcam -o "\-1" -s 9 -e 22 -m 30 -d "phenocam"
 ```
 
 To retrieve the current login key to use when using sFTP use:
