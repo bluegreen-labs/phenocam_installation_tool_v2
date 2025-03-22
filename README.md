@@ -63,6 +63,22 @@ Use the included script using the following code to update your password:
 
 using the IP address you retrieved using the above instructions. **Follow the onscreen instructions** to set a new password. Change the default password to a strong password which is unlikely to be brute forced (i.e. 12+ characters in a mix of letters/numbers/special characters). **You will be asked for the password again when logging in using SSH, this is normal!**
 
+> [!note]
+> When installing multiple devices in sequence you might encounter the
+> below warning:
+>
+> ```
+> @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+> @ WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED! @
+> @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+> IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
+> ```
+>
+> You can safely ignore this warning and remove it by
+> executing the following command:
+> 
+> ```ssh-keygen -f "~/.ssh/known_hosts" -R THE_DEVICE_IP```
+
 ### 4. The PIT configuration script
 
 To install your phenocam you will use the Phenocam Installation Tool (or PIT) script. The `PIT.sh` script allows you to set the correct parameters, retrieve login keys (for sFTP based transfers), trigger a manual image upload and remove all configuration files (purge the camera). All parameters are listed below, with those which take arguments noted in a **bold** font.
