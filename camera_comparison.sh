@@ -13,7 +13,11 @@ saturation=$3
 # while keeping the rest static (see below)
 cat PIT.sh | sed "s/saturation=\"100\"/saturation=\"${saturation}\"/g" > PITtmp.sh
 
+# change permissions
+chmod +x PITtmp.sh
+
 # fix the schedule (see -f)
-sh PITtmp.sh -i $ip -p $pass -n testcam -o "\-1" -s 9 -e 22 -m 30 -d "phenocam" -f TRUE
+./PITtmp.sh -i ${ip} -p ${pass} -n testcam -o "\-1" -s 9 -e 22 -m 30 -d "phenocam" -f TRUE
 
-
+# remove temporary script
+rm PITtmp.sh
