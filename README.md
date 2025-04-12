@@ -92,6 +92,7 @@ To install your phenocam you will use the Phenocam Installation Tool (or PIT) sc
 | -s            | **first hour of the scheduled image acquisitions (e.g. 4 in the morning)** |
 | -e            | **last hour of the scheduled image acquisitions (e.g. ten at night, so 22 in 24-h notation)** |
 | -m            | **interval minutes, at which to take pictures (e.g. 15, every 15 minutes - default phenocam setting is 30)** |
+| -f            | **fix a non-random interval (logical TRUE or FALSE - default is FALSE)** |
 | -d            | **destination of the images, either the 'phenocam' or 'icos' network** |
 | -r            | retrieve previously installed login keys from the camera |
 | -x            | purge all settings and scripts from the camera (soft reset) |
@@ -116,7 +117,12 @@ To configure a camera for the GMT+1 time zone taking pictures every 30 minutes b
 # your commands if you are working on the ICOS network
 ```
 
-Note, any dash (-) needs to be quoted and escaped when providing it as a parameters. As such, negative GMT offsets (in the US) need to use the escape character \ as shown below:
+Any dash (-) needs to be quoted and escaped when providing it as a parameters. As such, negative GMT offsets (in the US) need to use the escape character \ as shown below:
+
+> [!warning]
+> the `-f` parameters should be kept to the default (not completed) to generate random uploads at a set interval. 
+> This parameter should only be used to coordinate multiple cameras for cross validation or coordinated uploads.
+
 
 ```bash
 ./PIT.sh -i 192.168.1.xxx -p "password" -n testcam -o "\-1" -s 9 -e 22 -m 30 -d "phenocam"
